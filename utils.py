@@ -72,7 +72,8 @@ def is_terminal_board(board):
     return detect_win(board, HUMAN) or detect_win(board, AI) or len(valid_locations(board)) == 0
 
 def encode_state(board):
-    return tuple(board.flatten())
+    board_array = np.array(board)
+    return tuple(board_array.flatten())
 
 class Counter(dict):
     def __getitem__(self, idx):

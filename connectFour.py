@@ -27,9 +27,9 @@ def main():
         agent = MinimaxAgent(depth=5)  # example depth
         gui.run_game(ai_agent=agent, human_vs_human=False)
     elif mode == 'qlearning':
-        q_agent = ConnectFourQLearningAgent(alpha=0.1, gamma=0.9, numTraining=100, epsilon=0.05)
-        opponent = MinimaxAgent(depth=1)
-        q_agent.train()
+        q_agent = ConnectFourQLearningAgent(alpha=0.05, gamma=0.9, numTraining=100000, epsilon=1)
+        opponent = MinimaxAgent(depth=10)
+        q_agent.train(opponent)
         gui.run_game(ai_agent=q_agent, human_vs_human=False)
 
     else:
