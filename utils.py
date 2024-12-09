@@ -5,9 +5,12 @@ import inspect
 
 ROWS = 6
 COLUMNS = 7
+
 EMPTY = 0
 HUMAN = 1
 AI = 2
+
+MAX_SPACE_TO_WIN = 3
 
 def create_board():
     return np.zeros((ROWS, COLUMNS), dtype=np.int8)
@@ -29,6 +32,34 @@ def clone_and_place_piece(board, player, column):
     place_piece(new_board, player, column)
     return new_board
 
+def detect_win(board, player):
+    # Horizontal win
+    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in range(ROWS):
+            if board[row][col] == player and board[row][col+1] == player and \
+                    board[row][col+2] == player and board[row][col+3] == player:
+                return True
+    # Vertical win
+    for col in range(COLUMNS):
+        for row in range(ROWS - MAX_SPACE_TO_WIN):
+            if board[row][col] == player and board[row+1][col] == player and \
+                    board[row+2][col] == player and board[row+3][col] == player:
+                return True
+    # Diagonal upwards win
+    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in range(ROWS - MAX_SPACE_TO_WIN):
+            if board[row][col] == player and board[row+1][col+1] == player and \
+                    board[row+2][col+2] == player and board[row+3][col+3] == player:
+                return True
+    # Diagonal downwards win
+    for col in range(COLUMNS - MAX_SPACE_TO_WIN):
+        for row in range(MAX_SPACE_TO_WIN, ROWS):
+            if board[row][col] == player and board[row-1][col+1] == player and \
+                    board[row-2][col+2] == player and board[row-3][col+3] == player:
+                return True
+    return False
+    
+'''
 def detect_win(board, player):
     # Check horizontal
     for col in range(COLUMNS - 3):
@@ -67,6 +98,7 @@ def detect_win(board, player):
                 return True
 
     return False
+'''
 
 def is_terminal_board(board):
     return detect_win(board, HUMAN) or detect_win(board, AI) or len(valid_locations(board)) == 0

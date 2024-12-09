@@ -223,10 +223,10 @@ class ConnectFourQLearningAgent(QLearningAgent):
 
         return score
 '''
-
 from agents.minimaxAgent import MinimaxAgent
 from agents.randomAgent import RandomAgent
 import random
+import numpy as np
 import math
 from utils import valid_locations, encode_state, clone_and_place_piece, is_terminal_board, detect_win, HUMAN, AI, ROWS, COLUMNS, EMPTY
 
@@ -328,123 +328,113 @@ class ConnectFourQLearningAgent:
         return encode_state(board)
 
     def decode_state(self, state):
-        """
-        Given a state (likely a tuple), decode it into a board matrix if needed.
-        If encode_state is consistent, we can directly reshape the state into a board.
-        """
-        # encode_state returns a tuple of length ROWS*COLUMNS, representing board row-major order.
-        # We can convert it back into a 2D list.
-        board_list = list(state)
-        # Rebuild into a board
-        board = [board_list[i*COLUMNS:(i+1)*COLUMNS] for i in range(ROWS)]
-        return board
+        board_array = np.array(state).reshape((ROWS, COLUMNS))
+        return board_array
+
+    def evaluate_intermediate_state(self, board):
+        # Simple heuristic: Reward difference in piece count
+        board_array = np.array(board)
+        AI_count = np.count_nonzero(board_array == AI)
+        HUMAN_count = np.count_nonzero(board_array == HUMAN)
+        # Reward is scaled difference in piece count
+        return 0.1 * (AI_count - HUMAN_count)
 
     def train(self, opponent):
         if opponent is None:
             raise ValueError("No opponent provided for training!")
 
+        print("EMPTY:", EMPTY, "HUMAN:", HUMAN, "AI:", AI)
         print(f"Starting Q-Learning training for {self.numTraining} episodes against {opponent.__class__.__name__}.")
+
+        initial_epsilon = 1.0
+        decay_rate = 0.9995
 
         for episode in range(self.numTraining):
             board = self.create_empty_board()
-            current_player = HUMAN  # Human = first player, AI = second player in this code.
+            current_player = HUMAN
             game_over = False
             state = self.getStateRepresentation(board)
             prev_state = None
             prev_action = None
 
-            self.epsilon = 1 / (episode + 1)
+            # Apply epsilon decay
+            self.epsilon = initial_epsilon * (decay_rate ** episode)
 
-            # Debug: Print progress
             if (episode + 1) % 1000 == 0 or (episode + 1) == self.numTraining:
-                print(f"Episode: {episode+1}/{self.numTraining}, Epsilon: {self.epsilon}")
-
-            move_count = 0  # Count how many moves are made in this episode for debugging
+                print(f"Episode: {episode+1}/{self.numTraining}, Epsilon: {self.epsilon:.4f}")
 
             while not game_over:
-                # Debug: Print current board state every 10000 episodes to track progress
-                if (episode + 1) % 10000 == 0 and move_count < 5:  
-                    # Only print a few moves per episode to avoid huge logs
-                    print(f"Episode {episode+1}, Move {move_count}:")
-                    for r in board:
-                        print(r)
-                    print("-----------------")
-
                 if current_player == AI:
                     actions = self.getLegalActions(state)
-                    # Debug: Check what actions are available
-                    if (episode + 1) % 10000 == 0 and move_count < 5:
-                        print("AI Turn. Available actions:", actions)
+                    if not actions:
+                        game_over = True
+                        continue
 
                     action = self.getAction(board)
-                    if action is None:
-                        # No moves available
-                        game_over = True
-                        # Debug:
-                        if (episode + 1) % 10000 == 0:
-                            print("No moves available for AI, game over.")
-                    else:
-                        # Agent takes action
-                        new_board = clone_and_place_piece(board, AI, action)
-                        prev_state, prev_action = state, action
-                        board = new_board
+                    if action not in actions:
+                        # Debug: Log invalid action
+                        print(f"Invalid AI action selected: {action}")
+                        action = random.choice(actions)
+
+                    prev_state, prev_action = state, action
+                    board = clone_and_place_piece(board, AI, action)
+
                 else:
-                    # Opponent's turn
                     actions = valid_locations(board)
-                    # Debug: Check opponent moves
-                    if (episode + 1) % 10000 == 0 and move_count < 5:
-                        print(f"Opponent Turn. Available actions for {opponent.__class__.__name__}: {actions}")
+                    if not actions:
+                        game_over = True
+                        continue
 
                     action = opponent.getAction(board)
-                    if action is None:
-                        # Opponent has no moves
-                        game_over = True
-                        # Debug:
-                        if (episode + 1) % 10000 == 0:
-                            print("Opponent has no moves, game over.")
-                    else:
-                        board = clone_and_place_piece(board, HUMAN, action)
+                    if action not in actions:
+                        # Debug: Log invalid opponent action
+                        print(f"Invalid opponent action selected: {action}")
+                        action = random.choice(actions)
+
+                    board = clone_and_place_piece(board, HUMAN, action)
 
                 state = self.getStateRepresentation(board)
-                move_count += 1
 
-                # Debug: Check if the board is terminal
+                # Check terminal condition
                 if is_terminal_board(board):
-                    # Debug:
-                    if (episode + 1) % 10000 == 0:
-                        print("Board is terminal")
                     game_over = True
 
-                # If game ended, assign reward
+                # Assign rewards
                 if game_over and prev_state is not None and prev_action is not None:
+                    # Terminal state reward
                     if detect_win(board, AI):
                         reward = 10.0
-                        print("AI wins this episode!")
                     elif detect_win(board, HUMAN):
                         reward = -10.0
-                        print(f"{opponent.__class__.__name__} wins this episode!")
                     else:
-                        reward = 0.5
-                        print("This episode ended in a draw.")
+                        reward = 0.5  # draw
                     self.update(prev_state, prev_action, state, reward)
-                
                 elif prev_state is not None and prev_action is not None:
-                    # Non-terminal move: update with 0 reward
-                    self.update(prev_state, prev_action, state, 0)
+                    # Non-terminal intermediate reward
+                    intermediate_reward = self.evaluate_intermediate_state(board)
+                    self.update(prev_state, prev_action, state, intermediate_reward)
 
                 # Switch player
                 current_player = HUMAN if current_player == AI else AI
 
-        # After training
+            if (episode + 1) % 1000 == 0:
+                if hasattr(self, 'prev_qvalues'):
+                    # Compare current Q-values to previous snapshot
+                    diff = 0.0
+                    all_keys = set(self.qvalues.keys()).union(set(self.prev_qvalues.keys()))
+                    for k in all_keys:
+                        old_val = self.prev_qvalues.get(k, 0.0)
+                        new_val = self.qvalues.get(k, 0.0)
+                        diff += abs(new_val - old_val)
+                    print(f"Total Q-value difference since last checkpoint: {diff:.4f}")
+                # Save current Q-values for next comparison
+                self.prev_qvalues = self.qvalues.copy()
+
         self.epsilon = 0.0
         self.trainingCompleted = True
         print("Training completed. Epsilon set to 0. The agent will now act greedily.")
 
 
-
     def create_empty_board(self):
-        """
-        Create an empty board represented as a 2D list.
-        """
-        board = [[EMPTY for _ in range(COLUMNS)] for _ in range(ROWS)]
-        return board
+        return np.zeros((ROWS, COLUMNS), dtype = np.int8)
+
