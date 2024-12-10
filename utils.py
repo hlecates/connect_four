@@ -58,47 +58,6 @@ def detect_win(board, player):
                     board[row-2][col+2] == player and board[row-3][col+3] == player:
                 return True
     return False
-    
-'''
-def detect_win(board, player):
-    # Check horizontal
-    for col in range(COLUMNS - 3):
-        for row in range(ROWS):
-            if (board[row][col] == player and
-                board[row][col+1] == player and
-                board[row][col+2] == player and
-                board[row][col+3] == player):
-                return True
-
-    # Check vertical
-    for col in range(COLUMNS):
-        for row in range(ROWS - 3):
-            if (board[row][col] == player and
-                board[row+1][col] == player and
-                board[row+2][col] == player and
-                board[row+3][col] == player):
-                return True
-
-    # Check positively sloped diagonals
-    for col in range(COLUMNS - 3):
-        for row in range(ROWS - 3):
-            if (board[row][col] == player and
-                board[row+1][col+1] == player and
-                board[row+2][col+2] == player and
-                board[row+3][col+3] == player):
-                return True
-
-    # Check negatively sloped diagonals
-    for col in range(COLUMNS - 3):
-        for row in range(3, ROWS):
-            if (board[row][col] == player and
-                board[row-1][col+1] == player and
-                board[row-2][col+2] == player and
-                board[row-3][col+3] == player):
-                return True
-
-    return False
-'''
 
 def is_terminal_board(board):
     return detect_win(board, HUMAN) or detect_win(board, AI) or len(valid_locations(board)) == 0

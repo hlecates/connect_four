@@ -1,234 +1,9 @@
-'''
-import random
-from agents.minimaxAgent import MinimaxAgent
-from agents.learningAgents import ReinforcementAgent
-from agents.randomAgent import RandomAgent
-from utils import Counter, flipCoin, np, ROWS, COLUMNS, valid_locations, create_board, is_terminal_board, detect_win, place_piece, encode_state, AI, HUMAN, EMPTY
-
-class QLearningAgent(ReinforcementAgent):
-    """
-    A general Q-Learning Agent, environment-agnostic.
-    """
-    def __init__(self, **args):
-        ReinforcementAgent.__init__(self, **args)
-        self.Q_vals = Counter()
-
-    def getQValue(self, state, action):
-        return self.Q_vals[(state, action)]
-
-    def computeValueFromQValues(self, state):
-        actions = self.getLegalActions(state)
-        if not actions:
-            return 0.0
-        return max(self.getQValue(state, a) for a in actions)
-
-    def computeActionFromQValues(self, state):
-        actions = self.getLegalActions(state)
-        if not actions:
-            return None
-        maxQ = self.computeValueFromQValues(state)
-        bestActions = [a for a in actions if self.getQValue(state, a) == maxQ]
-        if not bestActions:
-            return None
-        return random.choice(bestActions)
-
-    def getAction(self, state):
-        actions = self.getLegalActions(state)
-        if not actions:
-            return None
-
-        if flipCoin(self.epsilon):
-            # Exploration
-            action = random.choice(actions)
-        else:
-            # Exploitation
-            action = self.computeActionFromQValues(state)
-
-        self.doAction(state, action)
-        return action
-
-    def update(self, state, action, nextState, reward):
-        currentQ = self.getQValue(state, action)
-        maxNextQ = self.computeValueFromQValues(nextState)
-        updatedQ = currentQ + self.alpha * (reward + self.discount * maxNextQ - currentQ)
-        self.Q_vals[(state, action)] = updatedQ
-
-    def getPolicy(self, state):
-        return self.computeActionFromQValues(state)
-
-    def getValue(self, state):
-        return self.computeValueFromQValues(state)
-
-
-class ConnectFourQLearningAgent(QLearningAgent):
-    """
-    A Q-Learning Agent adapted for Connect Four with improved reward structure
-    and epsilon decay schedule.
-    """
-
-    def getLegalActions(self, state):
-        # State is a tuple representing the board
-        board = np.array(state).reshape((ROWS, COLUMNS))
-        return valid_locations(board)
-
-    def getAction(self, state):
-        action = QLearningAgent.getAction(self, state)
-        self.doAction(state, action)
-        return action
-
-    def train(self, numRandomEpisodes=5000, switch_episode=80000):
-        """
-        Train the Q-learning agent by playing against RandomAgent first,
-        then MinimaxAgent after 'switch_episode' episodes.
-
-        Adjusted reward structure and epsilon decay.
-        """
-        print("Training is beginning...")
-        total_episodes = self.numTraining
-        print_interval = max(1, total_episodes // 10)  # Print progress every 10% of training
-
-        # Opponents
-        random_opponent = RandomAgent()
-        minimax_opponent = MinimaxAgent(depth=1)
-
-        for episode in range(1, total_episodes + 1):
-            board = create_board()
-            self.startEpisode()
-            current_player = AI
-            state = encode_state(board)
-
-            # More gradual epsilon decay:
-            # start with epsilon ~0.4, decay towards ~0.01 by end of training
-            # self.epsilon = max(0.01, 0.4 * (1 - (episode / float(total_episodes))))
-            self.epsilon = 1 / episode
-
-            lastState = None
-            lastAction = None
-
-            # Choose opponent
-            if episode <= switch_episode:
-                opponent = random_opponent
-            else:
-                opponent = minimax_opponent
-
-            while not is_terminal_board(board):
-                if current_player == AI:
-                    # Q-agent's turn
-                    action = self.getAction(state)
-                    if action is None:
-                        # No moves (terminal)
-                        break
-                    place_piece(board, AI, action)
-                    nextState = encode_state(board)
-
-                    # Compute reward
-                    if detect_win(board, AI):
-                        reward = 100.0  # Large positive reward for winning
-                    elif is_terminal_board(board):
-                        # Draw is neutral or slightly negative to encourage winning
-                        reward = -10.0
-                    else:
-                        # Intermediate reward from a heuristic evaluation
-                        reward = self.stateScore(board) * 0.5
-
-                    self.update(state, action, nextState, reward)
-                    state = nextState
-                    lastState, lastAction = state, action
-                    current_player = HUMAN
-
-                else:
-                    # Opponent's turn
-                    valid_moves = valid_locations(board)
-                    if not valid_moves:
-                        break
-                    opp_col = opponent.getAction(board)
-                    if opp_col not in valid_moves:
-                        opp_col = random.choice(valid_moves)
-                    place_piece(board, HUMAN, opp_col)
-                    state = encode_state(board)
-
-                    # If opponent wins, strong negative reward for AI's last move
-                    if detect_win(board, HUMAN) and lastState is not None and lastAction is not None:
-                        self.update(lastState, lastAction, state, -100.0)
-
-                    current_player = AI
-
-            self.stopEpisode()
-            if episode % print_interval == 0 or episode == total_episodes:
-                print(f"Training progress: {episode}/{total_episodes} episodes. Epsilon: {self.epsilon:.4f}")
-
-        print("Training has finished!")
-
-    def stateScore(self, board):
-        """
-        Compute a heuristic score for the current board from the AI's perspective.
-        We look at all possible 4-cell windows and score them.
-
-        Scoring logic:
-          - Four in a row (AI): large reward (captured by terminal reward above)
-          - Three in a row with an open space: moderate positive
-          - Two in a row with open spaces: small positive
-          - Opponent threats: negative
-
-        This scoring is scaled down since terminal conditions give the big rewards.
-        """
-        def evaluate_window(window, player):
-            opponent = HUMAN if player == AI else AI
-            player_count = np.count_nonzero(window == player)
-            opp_count = np.count_nonzero(window == opponent)
-            empty_count = np.count_nonzero(window == EMPTY)
-
-            score = 0
-            # Prioritize potential wins
-            if player_count == 3 and empty_count == 1:
-                score += 10
-            elif player_count == 2 and empty_count == 2:
-                score += 5
-
-            # Penalize opponent threats
-            if opp_count == 3 and empty_count == 1:
-                score -= 20
-            return score
-
-        score = 0
-        # Center column preference
-        center_col = COLUMNS // 2
-        center_array = [board[r][center_col] for r in range(ROWS)]
-        center_count = center_array.count(AI)
-        score += center_count * 3
-
-        # Horizontal windows
-        for r in range(ROWS):
-            for c in range(COLUMNS - 3):
-                window = board[r, c:c+4]
-                score += evaluate_window(window, AI)
-
-        # Vertical windows
-        for c in range(COLUMNS):
-            for r in range(ROWS - 3):
-                window = board[r:r+4, c]
-                score += evaluate_window(window, AI)
-
-        # Positive diagonal windows
-        for r in range(ROWS - 3):
-            for c in range(COLUMNS - 3):
-                window = [board[r+i][c+i] for i in range(4)]
-                score += evaluate_window(window, AI)
-
-        # Negative diagonal windows
-        for r in range(ROWS - 3):
-            for c in range(3, COLUMNS):
-                window = [board[r+i][c-i] for i in range(4)]
-                score += evaluate_window(window, AI)
-
-        return score
-'''
 from agents.minimaxAgent import MinimaxAgent
 from agents.randomAgent import RandomAgent
 import random
 import numpy as np
-import math
-from utils import valid_locations, encode_state, clone_and_place_piece, is_terminal_board, detect_win, HUMAN, AI, ROWS, COLUMNS, EMPTY
+import statistics  # for variance calculation, or you can use numpy if preferred
+from utils import valid_locations, encode_state, clone_and_place_piece, is_terminal_board, detect_win, place_piece, HUMAN, AI, ROWS, COLUMNS, EMPTY
 
 class ConnectFourQLearningAgent:
     def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.1, numTraining=1000):
@@ -332,24 +107,111 @@ class ConnectFourQLearningAgent:
         return board_array
 
     def evaluate_intermediate_state(self, board):
-        # Simple heuristic: Reward difference in piece count
-        board_array = np.array(board)
-        AI_count = np.count_nonzero(board_array == AI)
-        HUMAN_count = np.count_nonzero(board_array == HUMAN)
-        # Reward is scaled difference in piece count
-        return 0.1 * (AI_count - HUMAN_count)
+        """
+        Evaluate the board to provide an intermediate reward.
+        The goal is to return a small but informative value:
+        - Positive if the AI is in a good position.
+        - Negative if the opponent is in a good position.
+        """
 
-    def train(self, opponent):
-        if opponent is None:
-            raise ValueError("No opponent provided for training!")
+        board_array = np.array(board)
+        score = 0
+        
+        # Define constants for scoring patterns
+        THREE_IN_A_ROW_AI = 5
+        TWO_IN_A_ROW_AI = 2
+        THREE_IN_A_ROW_OPP = -1000000
+        TWO_IN_A_ROW_OPP = -5
+        
+        # Helper to evaluate a 4-cell window
+        def evaluate_window(window):
+            AI_count = np.count_nonzero(window == AI)
+            HUMAN_count = np.count_nonzero(window == HUMAN)
+            EMPTY_count = np.count_nonzero(window == EMPTY)
+
+            # If both players have pieces in this window, it's not useful for either
+            if AI_count > 0 and HUMAN_count > 0:
+                return 0
+
+            # Scoring logic:
+            # Prioritize AI making "threats"
+            if AI_count == 3 and EMPTY_count == 1:
+                return THREE_IN_A_ROW_AI
+            elif AI_count == 2 and EMPTY_count == 2:
+                return TWO_IN_A_ROW_AI
+            
+            # Penalize opponent threats
+            if HUMAN_count == 3 and EMPTY_count == 1:
+                return THREE_IN_A_ROW_OPP
+            elif HUMAN_count == 2 and EMPTY_count == 2:
+                return TWO_IN_A_ROW_OPP
+
+            return 0
+        
+        # Center column preference (gives more flexibility)
+        center_col = COLUMNS // 2
+        center_array = board_array[:, center_col]
+        center_count = np.count_nonzero(center_array == AI)
+        score += center_count * 3  # Small bonus for playing in center
+
+        # Evaluate horizontal windows
+        for r in range(ROWS):
+            for c in range(COLUMNS - 3):
+                window = board_array[r, c:c+4]
+                score += evaluate_window(window)
+
+        # Evaluate vertical windows
+        for c in range(COLUMNS):
+            for r in range(ROWS - 3):
+                window = board_array[r:r+4, c]
+                score += evaluate_window(window)
+
+        # Evaluate positively sloped diagonals
+        for r in range(ROWS - 3):
+            for c in range(COLUMNS - 3):
+                window = [board_array[r+i][c+i] for i in range(4)]
+                score += evaluate_window(window)
+
+        # Evaluate negatively sloped diagonals
+        for r in range(ROWS - 3):
+            for c in range(3, COLUMNS):
+                window = [board_array[r+i][c-i] for i in range(4)]
+                score += evaluate_window(window)
+
+        baseline = 0.01
+        scaling_factor = 0.1 
+        return baseline + scaling_factor * score
+
+    
+
+    def train(self, numEpisodes=10000, switch_episode=-1):
+        # Create opponents
+        random_opponent = RandomAgent()
+        minimax_opponent = MinimaxAgent(depth=3)  # Adjust depth as needed
 
         print("EMPTY:", EMPTY, "HUMAN:", HUMAN, "AI:", AI)
-        print(f"Starting Q-Learning training for {self.numTraining} episodes against {opponent.__class__.__name__}.")
+        print(f"Starting Q-Learning training for {numEpisodes} episodes.")
 
         initial_epsilon = 1.0
         decay_rate = 0.9995
 
-        for episode in range(self.numTraining):
+        # Tracking cumulative outcomes
+        wins = 0
+        losses = 0
+        draws = 0
+
+        # Tracking outcomes for the last 1000 episodes
+        block_wins = 0
+        block_losses = 0
+        block_draws = 0
+
+        for episode in range(numEpisodes):
+            # Decide which opponent to face this episode
+            if episode < switch_episode:
+                opponent = random_opponent
+            else:
+                opponent = minimax_opponent
+
             board = self.create_empty_board()
             current_player = HUMAN
             game_over = False
@@ -360,14 +222,14 @@ class ConnectFourQLearningAgent:
             # Apply epsilon decay
             self.epsilon = initial_epsilon * (decay_rate ** episode)
 
-            if (episode + 1) % 1000 == 0 or (episode + 1) == self.numTraining:
-                print(f"Episode: {episode+1}/{self.numTraining}, Epsilon: {self.epsilon:.4f}")
+            episode_result = None
 
             while not game_over:
                 if current_player == AI:
                     actions = self.getLegalActions(state)
                     if not actions:
                         game_over = True
+                        episode_result = 'draw'
                         continue
 
                     action = self.getAction(board)
@@ -378,16 +240,15 @@ class ConnectFourQLearningAgent:
 
                     prev_state, prev_action = state, action
                     board = clone_and_place_piece(board, AI, action)
-
                 else:
                     actions = valid_locations(board)
                     if not actions:
                         game_over = True
+                        episode_result = 'draw'
                         continue
 
                     action = opponent.getAction(board)
                     if action not in actions:
-                        # Debug: Log invalid opponent action
                         print(f"Invalid opponent action selected: {action}")
                         action = random.choice(actions)
 
@@ -395,31 +256,44 @@ class ConnectFourQLearningAgent:
 
                 state = self.getStateRepresentation(board)
 
-                # Check terminal condition
                 if is_terminal_board(board):
                     game_over = True
-
-                # Assign rewards
-                if game_over and prev_state is not None and prev_action is not None:
-                    # Terminal state reward
                     if detect_win(board, AI):
-                        reward = 10.0
+                        episode_result = 'win'
                     elif detect_win(board, HUMAN):
+                        episode_result = 'loss'
+                    else:
+                        episode_result = 'draw'
+
+                # Update Q-values
+                if game_over and prev_state is not None and prev_action is not None:
+                    if episode_result == 'win':
+                        reward = 10.0
+                    elif episode_result == 'loss':
                         reward = -10.0
                     else:
-                        reward = 0.5  # draw
+                        reward = 0.5
                     self.update(prev_state, prev_action, state, reward)
                 elif prev_state is not None and prev_action is not None:
-                    # Non-terminal intermediate reward
                     intermediate_reward = self.evaluate_intermediate_state(board)
                     self.update(prev_state, prev_action, state, intermediate_reward)
 
-                # Switch player
                 current_player = HUMAN if current_player == AI else AI
 
+            # Update cumulative and block-level counters
+            if episode_result == 'win':
+                wins += 1
+                block_wins += 1
+            elif episode_result == 'loss':
+                losses += 1
+                block_losses += 1
+            elif episode_result == 'draw':
+                draws += 1
+                block_draws += 1
+
+            # Every 1000 episodes, track Q-value differences, print segment win rate and reset block counters
             if (episode + 1) % 1000 == 0:
                 if hasattr(self, 'prev_qvalues'):
-                    # Compare current Q-values to previous snapshot
                     diff = 0.0
                     all_keys = set(self.qvalues.keys()).union(set(self.prev_qvalues.keys()))
                     for k in all_keys:
@@ -427,8 +301,21 @@ class ConnectFourQLearningAgent:
                         new_val = self.qvalues.get(k, 0.0)
                         diff += abs(new_val - old_val)
                     print(f"Total Q-value difference since last checkpoint: {diff:.4f}")
-                # Save current Q-values for next comparison
                 self.prev_qvalues = self.qvalues.copy()
+
+                # Compute win rate for the last 1000 episodes
+                block_total = block_wins + block_losses + block_draws
+                if block_total > 0:
+                    block_win_rate = block_wins / block_total
+                    print(f"Win Rate for episodes {episode-999}-{episode+1}: {block_win_rate:.2f} "
+                        f"(W:{block_wins}, L:{block_losses}, D:{block_draws})")
+                else:
+                    print(f"No completed episodes in the last 1000 games, cannot compute block win rate.")
+
+                # Reset block counters
+                block_wins = 0
+                block_losses = 0
+                block_draws = 0
 
         self.epsilon = 0.0
         self.trainingCompleted = True
@@ -437,4 +324,3 @@ class ConnectFourQLearningAgent:
 
     def create_empty_board(self):
         return np.zeros((ROWS, COLUMNS), dtype = np.int8)
-
