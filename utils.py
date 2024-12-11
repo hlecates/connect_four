@@ -12,6 +12,26 @@ AI = 2
 
 MAX_SPACE_TO_WIN = 3
 
+def getLegalActions(state):
+    """
+    Given a state representation, return all valid actions (columns) where a piece can be placed.
+    """
+    board = decode_state(state)
+    return valid_locations(board)
+
+def getStateRepresentation(board):
+    """
+    Encode the board as a tuple/string for dictionary keys in Q-table.
+    """
+    return encode_state(board)
+
+def decode_state(state):
+    board_array = np.array(state).reshape((ROWS, COLUMNS))
+    return board_array
+    
+def create_empty_board():
+    return np.zeros((ROWS, COLUMNS), dtype=np.int8)
+
 def create_board():
     return np.zeros((ROWS, COLUMNS), dtype=np.int8)
 

@@ -1,0 +1,112 @@
+Minimax vs Minimax: Agent1 depth=1, Agent2 depth=3
+Results:
+Minimax_Depth_Agent1: 1
+Minimax_Depth_Agent2: 3
+Wins_Agent1: 50
+Wins_Agent2: 50
+Draws: 0
+Agent1_Win_Rate: 0.5
+Agent2_Win_Rate: 0.5
+Draw_Rate: 0.0
+
+Per-game outcomes:
+Game 1: win_agent1
+Game 2: win_agent2
+Game 3: win_agent1
+Game 4: win_agent2
+Game 5: win_agent1
+Game 6: win_agent2
+Game 7: win_agent1
+Game 8: win_agent2
+Game 9: win_agent1
+Game 10: win_agent2
+Game 11: win_agent1
+Game 12: win_agent2
+Game 13: win_agent1
+Game 14: win_agent2
+Game 15: win_agent1
+Game 16: win_agent2
+Game 17: win_agent1
+Game 18: win_agent2
+Game 19: win_agent1
+Game 20: win_agent2
+Game 21: win_agent1
+Game 22: win_agent2
+Game 23: win_agent1
+Game 24: win_agent2
+Game 25: win_agent1
+Game 26: win_agent2
+Game 27: win_agent1
+Game 28: win_agent2
+Game 29: win_agent1
+Game 30: win_agent2
+Game 31: win_agent1
+Game 32: win_agent2
+Game 33: win_agent1
+Game 34: win_agent2
+Game 35: win_agent1
+Game 36: win_agent2
+Game 37: win_agent1
+Game 38: win_agent2
+Game 39: win_agent1
+Game 40: win_agent2
+Game 41: win_agent1
+Game 42: win_agent2
+Game 43: win_agent1
+Game 44: win_agent2
+Game 45: win_agent1
+Game 46: win_agent2
+Game 47: win_agent1
+Game 48: win_agent2
+Game 49: win_agent1
+Game 50: win_agent2
+Game 51: win_agent1
+Game 52: win_agent2
+Game 53: win_agent1
+Game 54: win_agent2
+Game 55: win_agent1
+Game 56: win_agent2
+Game 57: win_agent1
+Game 58: win_agent2
+Game 59: win_agent1
+Game 60: win_agent2
+Game 61: win_agent1
+Game 62: win_agent2
+Game 63: win_agent1
+Game 64: win_agent2
+Game 65: win_agent1
+Game 66: win_agent2
+Game 67: win_agent1
+Game 68: win_agent2
+Game 69: win_agent1
+Game 70: win_agent2
+Game 71: win_agent1
+Game 72: win_agent2
+Game 73: win_agent1
+Game 74: win_agent2
+Game 75: win_agent1
+Game 76: win_agent2
+Game 77: win_agent1
+Game 78: win_agent2
+Game 79: win_agent1
+Game 80: win_agent2
+Game 81: win_agent1
+Game 82: win_agent2
+Game 83: win_agent1
+Game 84: win_agent2
+Game 85: win_agent1
+Game 86: win_agent2
+Game 87: win_agent1
+Game 88: win_agent2
+Game 89: win_agent1
+Game 90: win_agent2
+Game 91: win_agent1
+Game 92: win_agent2
+Game 93: win_agent1
+Game 94: win_agent2
+Game 95: win_agent1
+Game 96: win_agent2
+Game 97: win_agent1
+Game 98: win_agent2
+Game 99: win_agent1
+Game 100: win_agent2

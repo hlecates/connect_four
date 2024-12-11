@@ -1,0 +1,112 @@
+Minimax vs Minimax: Agent1 depth=4, Agent2 depth=3
+Results:
+Minimax_Depth_Agent1: 4
+Minimax_Depth_Agent2: 3
+Wins_Agent1: 50
+Wins_Agent2: 0
+Draws: 50
+Agent1_Win_Rate: 0.5
+Agent2_Win_Rate: 0.0
+Draw_Rate: 0.5
+
+Per-game outcomes:
+Game 1: win_agent1
+Game 2: draw
+Game 3: win_agent1
+Game 4: draw
+Game 5: win_agent1
+Game 6: draw
+Game 7: win_agent1
+Game 8: draw
+Game 9: win_agent1
+Game 10: draw
+Game 11: win_agent1
+Game 12: draw
+Game 13: win_agent1
+Game 14: draw
+Game 15: win_agent1
+Game 16: draw
+Game 17: win_agent1
+Game 18: draw
+Game 19: win_agent1
+Game 20: draw
+Game 21: win_agent1
+Game 22: draw
+Game 23: win_agent1
+Game 24: draw
+Game 25: win_agent1
+Game 26: draw
+Game 27: win_agent1
+Game 28: draw
+Game 29: win_agent1
+Game 30: draw
+Game 31: win_agent1
+Game 32: draw
+Game 33: win_agent1
+Game 34: draw
+Game 35: win_agent1
+Game 36: draw
+Game 37: win_agent1
+Game 38: draw
+Game 39: win_agent1
+Game 40: draw
+Game 41: win_agent1
+Game 42: draw
+Game 43: win_agent1
+Game 44: draw
+Game 45: win_agent1
+Game 46: draw
+Game 47: win_agent1
+Game 48: draw
+Game 49: win_agent1
+Game 50: draw
+Game 51: win_agent1
+Game 52: draw
+Game 53: win_agent1
+Game 54: draw
+Game 55: win_agent1
+Game 56: draw
+Game 57: win_agent1
+Game 58: draw
+Game 59: win_agent1
+Game 60: draw
+Game 61: win_agent1
+Game 62: draw
+Game 63: win_agent1
+Game 64: draw
+Game 65: win_agent1
+Game 66: draw
+Game 67: win_agent1
+Game 68: draw
+Game 69: win_agent1
+Game 70: draw
+Game 71: win_agent1
+Game 72: draw
+Game 73: win_agent1
+Game 74: draw
+Game 75: win_agent1
+Game 76: draw
+Game 77: win_agent1
+Game 78: draw
+Game 79: win_agent1
+Game 80: draw
+Game 81: win_agent1
+Game 82: draw
+Game 83: win_agent1
+Game 84: draw
+Game 85: win_agent1
+Game 86: draw
+Game 87: win_agent1
+Game 88: draw
+Game 89: win_agent1
+Game 90: draw
+Game 91: win_agent1
+Game 92: draw
+Game 93: win_agent1
+Game 94: draw
+Game 95: win_agent1
+Game 96: draw
+Game 97: win_agent1
+Game 98: draw
+Game 99: win_agent1
+Game 100: draw
