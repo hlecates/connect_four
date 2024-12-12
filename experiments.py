@@ -75,7 +75,7 @@ def record_results(filename, description, results, game_results=None):
     `results` is a dict with keys/values for wins, losses, and draws.
     If game_results (list) is provided, also record each game's outcome.
     """
-    with open(os.path.join('data', filename), 'w') as f:
+    with open(os.path.join('data/raw', filename), 'w') as f:
         f.write(description + "\n")
         f.write("Results:\n")
         for k,v in results.items():
@@ -89,7 +89,7 @@ def record_results(filename, description, results, game_results=None):
 # ---------------------------
 # Experiments
 # ---------------------------
-
+'''
 # 1. Minimax vs Minimax with various depths
 minimax_depths = [1, 2, 3, 4, 5]
 for d1 in minimax_depths:
@@ -182,5 +182,61 @@ for t1 in training_episodes_list:
         filename = f"qlearning_vs_qlearning_{t1}_{t2}.txt"
         desc = f"Q-Learning vs Q-Learning: Agent1 trained={t1}, Agent2 trained={t2}"
         record_results(filename, desc, results, game_res)
+'''
+# 4: Q-Learning against Random
+q_training_list = [10, 100, 500, 1000, 5000, 10000]
+random_opponent = RandomAgent()
 
+for t in q_training_list:
+    q_agent = ConnectFourQLearningAgent(alpha=0.1, gamma=0.99, numTraining=t, epsilon=1)
+    q_agent.train(numEpisodes=t)
+
+    # After training, q_agent is tested against random_opponent
+    w1, w2, dr, game_res = run_games(q_agent, random_opponent, num_games=100)
+    total = w1 + w2 + dr
+    results = {
+        "Q_TrainingEpisodes": t,
+        "Opponent": "Random",
+        "Wins_Q": w1,
+        "Wins_Random": w2,
+        "Draws": dr,
+        "Q_Win_Rate": w1/total if total > 0 else 0,
+        "Random_Win_Rate": w2/total if total > 0 else 0,
+        "Draw_Rate": dr/total if total > 0 else 0
+    }
+    filename = f"qlearning_vs_random_{t}.txt"
+    desc = f"Q-Learning vs Random: Q trained for {t} episodes"
+    record_results(filename, desc, results, game_res)
+
+
+'''
+# We'll fix Q_Agent2_Training to 5000 and vary alpha to see how it affects performance.
+alpha_values = [0.01, 0.05, 0.1, 0.2]  # Different learning rates
+fixed_training = 5000
+opponent = ConnectFourQLearningAgent(alpha=0.1, gamma=0.99, numTraining=fixed_training, epsilon=1)
+opponent.train(numEpisodes=fixed_training)
+opponent.epsilon = 0  # Act greedily after training
+
+for alpha in alpha_values:
+    q_agent_alpha = ConnectFourQLearningAgent(alpha=alpha, gamma=0.99, numTraining=fixed_training, epsilon=1)
+    q_agent_alpha.train(numEpisodes=fixed_training)
+    q_agent_alpha.epsilon = 0
+
+    w1, w2, dr, game_res = run_games(q_agent_alpha, opponent, num_games=100)
+    total = w1 + w2 + dr
+    results = {
+        "Alpha": alpha,
+        "Q_Agent_Training": fixed_training,
+        "Opponent_Training": fixed_training,
+        "Wins_Q_Agent": w1,
+        "Wins_Opponent": w2,
+        "Draws": dr,
+        "Q_Agent_Win_Rate": w1/total if total > 0 else 0,
+        "Opponent_Win_Rate": w2/total if total > 0 else 0,
+        "Draw_Rate": dr/total if total > 0 else 0
+    }
+    filename = f"qlearning_vs_qlearning_alpha_{alpha}.txt"
+    desc = f"Q-Learning vs Q-Learning: Alpha={alpha}, both trained {fixed_training} episodes"
+    record_results(filename, desc, results, game_res)
+'''
 print("All experiments completed. Results are in the data/ directory.")

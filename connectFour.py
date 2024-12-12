@@ -24,7 +24,7 @@ def main():
         gui.run_game(human_vs_human=True)
     elif mode == 'minimax':
         # Human vs minimax
-        agent = MinimaxAgent(depth=5)
+        agent = MinimaxAgent(depth=8)
         gui.run_game(ai_agent=agent, human_vs_human=False)
     elif mode == 'qlearning':
         q_agent = ConnectFourQLearningAgent(alpha=0.1, gamma=0.99, numTraining=10000, epsilon=1)
